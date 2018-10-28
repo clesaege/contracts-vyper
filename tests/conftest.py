@@ -108,3 +108,34 @@ def DEN_exchange(w3, exchange_abi, exchange_factory, DEN_token):
         address=exchange_address,
         abi=exchange_abi
     ))
+
+@pytest.fixture
+def custom_OMG_token(w3):
+    deploy = create_contract(w3, 'contracts/test_contracts/custom_omg_ERC20.vy')
+    tx_hash = deploy.constructor(b'OMG Token', b'OMG', 18, 100000*10**18).transact()
+    tx_receipt = w3.eth.getTransactionReceipt(tx_hash)
+    return ConciseContract(w3.eth.contract(
+        address=tx_receipt.contractAddress,
+        abi=deploy.abi
+    ))
+
+@pytest.fixture
+def custom_OMG_exchange(w3, custom_OMG_token, exchange_factory):
+    deploy = create_contract(w3, 'contracts/custom_omg_exchange.vy')
+    tx_hash = deploy.constructor().transact()
+    tx_receipt = w3.eth.getTransactionReceipt(tx_hash)
+    custom_exchange = ConciseContract(w3.eth.contract(
+        address=tx_receipt.contractAddress,
+        abi=deploy.abi
+    ))
+    custom_exchange.setup(custom_OMG_token.address, exchange_factory.address, transact={})
+    return custom_exchange
+
+# @pytest.fixture
+# def custom_OMG_exchange(w3, exchange_abi, exchange_factory, custom_OMG_token):
+#     exchange_factory.createExchange(custom_OMG_token.address, transact={})
+#     exchange_address = exchange_factory.getExchange(custom_OMG_token.address)
+#     return ConciseContract(w3.eth.contract(
+#         address=exchange_address,
+#         abi=exchange_abi
+#     ))
